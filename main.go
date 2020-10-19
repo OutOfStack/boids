@@ -5,26 +5,22 @@ import (
 
 	"golang.org/x/image/colornames"
 
+	"github.com/OutOfStack/boids/config"
 	"github.com/OutOfStack/boids/object"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 )
 
-const (
-	width, height = 800, 480
-	boidsCount    = 500
-)
-
 var (
-	boids [boidsCount]*object.Boid
+	boids [config.BoidsCount]*object.Boid
 )
 
 func main() {
-	for i := 0; i < boidsCount; i++ {
-		boid := object.CreateBoid(i, width, height)
+	for i := 0; i < config.BoidsCount; i++ {
+		boid := object.CreateBoid(i)
 		boids[i] = boid
-		go boid.Start()
+		go boid.Start(&boids)
 	}
 	pixelgl.Run(run)
 }
@@ -32,7 +28,7 @@ func main() {
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Boids",
-		Bounds: pixel.R(0, 0, width, height),
+		Bounds: pixel.R(0, 0, config.Width, config.Height),
 		VSync:  true,
 	}
 	win, err := pixelgl.NewWindow(cfg)
@@ -45,7 +41,7 @@ func run() {
 
 		imd := imdraw.New(nil)
 		for _, boid := range boids {
-			imd.Color = colornames.Green
+			imd.Color = colornames.Gray
 			imd.Push(pixel.V(boid.Position.X+2, boid.Position.Y),
 				pixel.V(boid.Position.X-2, boid.Position.Y),
 				pixel.V(boid.Position.X, boid.Position.Y-2),
