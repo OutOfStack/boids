@@ -2,25 +2,33 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	"golang.org/x/image/colornames"
 
 	"github.com/OutOfStack/boids/config"
-	"github.com/OutOfStack/boids/object"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 )
 
 var (
-	boids [config.BoidsCount]*object.Boid
+	boids   [config.BoidsCount]*Boid
+	boidMap [config.Width + 1][config.Height + 1]int
+	lock    = sync.Mutex{}
 )
 
 func main() {
+	for i, row := range boidMap {
+		for j := range row {
+			boidMap[i][j] = -1
+		}
+	}
+
 	for i := 0; i < config.BoidsCount; i++ {
-		boid := object.CreateBoid(i)
+		boid := CreateBoid(i)
 		boids[i] = boid
-		go boid.Start(&boids)
+		go boid.Start()
 	}
 	pixelgl.Run(run)
 }
@@ -42,10 +50,10 @@ func run() {
 		imd := imdraw.New(nil)
 		for _, boid := range boids {
 			imd.Color = colornames.Gray
-			imd.Push(pixel.V(boid.Position.X+2, boid.Position.Y),
-				pixel.V(boid.Position.X-2, boid.Position.Y),
-				pixel.V(boid.Position.X, boid.Position.Y-2),
-				pixel.V(boid.Position.X, boid.Position.Y+2))
+			imd.Push(pixel.V(boid.position.X+2, boid.position.Y),
+				pixel.V(boid.position.X-2, boid.position.Y),
+				pixel.V(boid.position.X, boid.position.Y-2),
+				pixel.V(boid.position.X, boid.position.Y+2))
 			imd.Polygon(1)
 		}
 
