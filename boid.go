@@ -10,6 +10,7 @@ import (
 	"github.com/faiface/pixel"
 )
 
+//Boid represents boid
 type Boid struct {
 	position pixel.Vec
 	velocity pixel.Vec
@@ -20,7 +21,7 @@ func init() {
 
 }
 
-func CreateBoid(bid int) *Boid {
+func createBoid(bid int) *Boid {
 	boid := &Boid{
 		position: pixel.V(rand.Float64()*float64(config.Width), rand.Float64()*float64(config.Height)),
 		velocity: pixel.V(rand.Float64()*2-1.0, rand.Float64()*2-1.0),
@@ -30,7 +31,7 @@ func CreateBoid(bid int) *Boid {
 	return boid
 }
 
-func (b *Boid) Start() {
+func (b *Boid) start() {
 	for {
 		b.moveOne()
 		time.Sleep(10 * time.Millisecond)
@@ -39,46 +40,50 @@ func (b *Boid) Start() {
 
 func (b *Boid) moveOne() {
 	acceleration := b.calcAcceleration()
-	lock.Lock()
+	rwLock.Lock()
 	b.velocity = v.Limit(b.velocity.Add(acceleration), -1, 1)
 	boidMap[int(b.position.X)][int(b.position.Y)] = -1
 	b.position = b.position.Add(b.velocity)
 	boidMap[int(b.position.X)][int(b.position.Y)] = b.id
-	next := b.position.Add(b.velocity)
-	if next.X >= float64(config.Width) || next.X < 0 {
-		b.velocity = pixel.V(-b.velocity.X, b.velocity.Y)
-	}
-	if next.Y >= float64(config.Height) || next.Y < 0 {
-		b.velocity = pixel.V(b.velocity.X, -b.velocity.Y)
-	}
-	lock.Unlock()
+	rwLock.Unlock()
 }
 
 func (b *Boid) calcAcceleration() pixel.Vec {
 	upper, lower := v.AddV(b.position, config.ViewRadius), v.AddV(b.position, -config.ViewRadius)
-	avgPosition, avgVelocity := pixel.V(0, 0), pixel.V(0, 0)
+	avgPosition, avgVelocity, separation := pixel.V(0, 0), pixel.V(0, 0), pixel.V(0, 0)
 	count := 0.0
 
-	lock.Lock()
+	rwLock.RLock()
 	for i := math.Max(lower.X, 0); i <= math.Min(upper.X, config.Width); i++ {
 		for j := math.Max(lower.Y, 0); j <= math.Min(upper.Y, config.Height); j++ {
-			if otherBoidId := boidMap[int(i)][int(j)]; otherBoidId != -1 && otherBoidId != b.id {
-				if dist := v.Distance(boids[otherBoidId].position, b.position); dist < config.ViewRadius {
+			if otherBoidID := boidMap[int(i)][int(j)]; otherBoidID != -1 && otherBoidID != b.id {
+				if dist := v.Distance(boids[otherBoidID].position, b.position); dist < config.ViewRadius {
 					count++
-					avgVelocity = avgVelocity.Add(boids[otherBoidId].velocity)
-					avgPosition = avgPosition.Add(boids[otherBoidId].position)
+					avgVelocity = avgVelocity.Add(boids[otherBoidID].velocity)
+					avgPosition = avgPosition.Add(boids[otherBoidID].position)
+					separation = separation.Add(v.DivisionV(b.position.Sub(boids[otherBoidID].position), dist))
 				}
 			}
 		}
 	}
-	lock.Unlock()
-	accel := pixel.V(0, 0)
+	rwLock.RUnlock()
+	accel := pixel.V(b.borderBounce(b.position.X, config.Width), b.borderBounce(b.position.Y, config.Height))
 	if count > 0 {
 		avgPosition, avgVelocity = v.DivisionV(avgPosition, count), v.DivisionV(avgVelocity, count)
 		accelAlignment := avgVelocity.Sub(b.velocity).Scaled(config.AdjRate)
 		accellCohesion := avgPosition.Sub(b.position).Scaled(config.AdjRate)
-		accel = accel.Add(accelAlignment).Add(accellCohesion)
+		accelSeparation := separation.Scaled(config.AdjRate)
+		accel = accel.Add(accelAlignment).Add(accellCohesion).Add(accelSeparation)
 	}
 
 	return accel
+}
+
+func (*Boid) borderBounce(pos, maxBorderPos float64) float64 {
+	if pos < config.ViewRadius {
+		return 1 / pos
+	} else if pos > maxBorderPos-config.ViewRadius {
+		return 1 / (pos - maxBorderPos)
+	}
+	return 0
 }

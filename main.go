@@ -15,7 +15,7 @@ import (
 var (
 	boids   [config.BoidsCount]*Boid
 	boidMap [config.Width + 1][config.Height + 1]int
-	lock    = sync.Mutex{}
+	rwLock  = sync.RWMutex{}
 )
 
 func main() {
@@ -26,9 +26,9 @@ func main() {
 	}
 
 	for i := 0; i < config.BoidsCount; i++ {
-		boid := CreateBoid(i)
+		boid := createBoid(i)
 		boids[i] = boid
-		go boid.Start()
+		go boid.start()
 	}
 	pixelgl.Run(run)
 }
