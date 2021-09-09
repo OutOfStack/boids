@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/OutOfStack/boids/config"
-	"github.com/OutOfStack/boids/v"
+	v "github.com/OutOfStack/boids/vector"
 	"github.com/faiface/pixel"
 )
 
