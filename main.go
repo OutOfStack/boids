@@ -4,12 +4,11 @@ import (
 	"log"
 	"sync"
 
-	"golang.org/x/image/colornames"
-
 	"github.com/OutOfStack/boids/config"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
+	"golang.org/x/image/colornames"
 )
 
 var (
@@ -48,13 +47,24 @@ func run() {
 		win.Clear(colornames.Black)
 
 		imd := imdraw.New(nil)
-		for _, boid := range boids {
-			imd.Color = colornames.Gray
+		for i, boid := range boids {
+			switch {
+			case i%11 == 0:
+				imd.Color = colornames.Darkorange
+			case i%17 == 0:
+				imd.Color = colornames.Cornflowerblue
+			case i%29 == 0:
+				imd.Color = colornames.Yellowgreen
+			case i%47 == 0:
+				imd.Color = colornames.Whitesmoke
+			default:
+				imd.Color = colornames.Gray
+			}
 			imd.Push(pixel.V(boid.position.X+2, boid.position.Y),
 				pixel.V(boid.position.X-2, boid.position.Y),
 				pixel.V(boid.position.X, boid.position.Y-2),
 				pixel.V(boid.position.X, boid.position.Y+2))
-			imd.Polygon(1)
+			imd.Polygon(1.5)
 		}
 
 		imd.Draw(win)

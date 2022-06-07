@@ -10,15 +10,10 @@ import (
 	"github.com/faiface/pixel"
 )
 
-//Boid represents boid
 type Boid struct {
 	position pixel.Vec
 	velocity pixel.Vec
 	id       int
-}
-
-func init() {
-
 }
 
 func createBoid(bid int) *Boid {
