@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	boids   [config.BoidsCount]*Boid
-	boidMap [config.Width + 1][config.Height + 1]int
-	rwLock  = sync.RWMutex{}
+	boids    [config.BoidsCount]*Boid
+	boidsMap [config.Width + 1][config.Height + 1]int
+	rwLock   = sync.RWMutex{}
 )
 
 func main() {
-	for i, row := range boidMap {
+	for i, row := range boidsMap {
 		for j := range row {
-			boidMap[i][j] = -1
+			boidsMap[i][j] = -1
 		}
 	}
 
@@ -53,10 +53,12 @@ func run() {
 				imd.Color = colornames.Darkorange
 			case i%17 == 0:
 				imd.Color = colornames.Cornflowerblue
-			case i%29 == 0:
+			case i%23 == 0:
 				imd.Color = colornames.Yellowgreen
-			case i%47 == 0:
+			case i%29 == 0:
 				imd.Color = colornames.Whitesmoke
+			case i%31 == 0:
+				imd.Color = colornames.Lawngreen
 			default:
 				imd.Color = colornames.Gray
 			}
@@ -64,7 +66,7 @@ func run() {
 				pixel.V(boid.position.X-2, boid.position.Y),
 				pixel.V(boid.position.X, boid.position.Y-2),
 				pixel.V(boid.position.X, boid.position.Y+2))
-			imd.Polygon(1.5)
+			imd.Polygon(1.2)
 		}
 
 		imd.Draw(win)

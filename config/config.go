@@ -1,8 +1,9 @@
 package config
 
 const (
-	Width, Height = 800, 600
-	BoidsCount    = 1000
-	ViewRadius    = 10
-	AdjRate       = 0.3
+	Width      = 800
+	Height     = 600
+	BoidsCount = 800
+	ViewRadius = 7
+	AdjRate    = 0.3
 )
