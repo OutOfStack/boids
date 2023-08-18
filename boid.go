@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"math"
 	"math/rand"
 	"time"
@@ -8,19 +9,31 @@ import (
 	"github.com/OutOfStack/boids/config"
 	v "github.com/OutOfStack/boids/vector"
 	"github.com/faiface/pixel"
+	"golang.org/x/image/colornames"
 )
 
 type Boid struct {
+	id       int
 	position pixel.Vec
 	velocity pixel.Vec
-	id       int
+	color    color.RGBA
 }
 
-func createBoid(bid int) *Boid {
+func createBoid(bID int) *Boid {
+	c := colornames.Gray
+	switch {
+	case bID%7 == 0:
+		c = colornames.Darkorange
+	case bID%11 == 0:
+		c = colornames.Cornflowerblue
+	case bID%13 == 0:
+		c = colornames.Yellowgreen
+	}
 	boid := &Boid{
+		id:       bID,
 		position: pixel.V(rand.Float64()*float64(config.Width), rand.Float64()*float64(config.Height)),
 		velocity: pixel.V(rand.Float64()*2-1.0, rand.Float64()*2-1.0),
-		id:       bid,
+		color:    c,
 	}
 	boidsMap[int(boid.position.X)][int(boid.position.Y)] = boid.id
 	return boid
@@ -52,7 +65,8 @@ func (b *Boid) calcAcceleration() pixel.Vec {
 	for i := math.Max(lower.X, 0); i <= math.Min(upper.X, config.Width); i++ {
 		for j := math.Max(lower.Y, 0); j <= math.Min(upper.Y, config.Height); j++ {
 			if otherBoidID := boidsMap[int(i)][int(j)]; otherBoidID != -1 && otherBoidID != b.id {
-				if dist := v.Distance(boids[otherBoidID].position, b.position); dist < config.ViewRadius {
+				otherBoid := boids[otherBoidID]
+				if dist := v.Distance(otherBoid.position, b.position); dist < config.ViewRadius && otherBoid.color == b.color {
 					count++
 					avgVelocity = avgVelocity.Add(boids[otherBoidID].velocity)
 					avgPosition = avgPosition.Add(boids[otherBoidID].position)

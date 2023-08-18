@@ -47,26 +47,13 @@ func run() {
 		win.Clear(colornames.Black)
 
 		imd := imdraw.New(nil)
-		for i, boid := range boids {
-			switch {
-			case i%11 == 0:
-				imd.Color = colornames.Darkorange
-			case i%17 == 0:
-				imd.Color = colornames.Cornflowerblue
-			case i%23 == 0:
-				imd.Color = colornames.Yellowgreen
-			case i%29 == 0:
-				imd.Color = colornames.Whitesmoke
-			case i%31 == 0:
-				imd.Color = colornames.Lawngreen
-			default:
-				imd.Color = colornames.Gray
-			}
+		for _, boid := range boids {
+			imd.Color = boid.color
 			imd.Push(pixel.V(boid.position.X+2, boid.position.Y),
 				pixel.V(boid.position.X-2, boid.position.Y),
 				pixel.V(boid.position.X, boid.position.Y-2),
 				pixel.V(boid.position.X, boid.position.Y+2))
-			imd.Polygon(1.2)
+			imd.Polygon(1.5)
 		}
 
 		imd.Draw(win)
