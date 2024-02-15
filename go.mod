@@ -1,10 +1,10 @@
 module github.com/OutOfStack/boids
 
-go 1.21
+go 1.22
 
 require (
 	github.com/faiface/pixel v0.11.0-beta
-	golang.org/x/image v0.11.0
+	golang.org/x/image v0.15.0
 )
 
 require (
