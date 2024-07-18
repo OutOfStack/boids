@@ -3,7 +3,7 @@ package main
 import (
 	"image/color"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/OutOfStack/boids/config"
@@ -26,14 +26,18 @@ func createBoid(bID int) *Boid {
 		c = colornames.Darkorange
 	case bID%11 == 0:
 		c = colornames.Cornflowerblue
-	case bID%13 == 0:
+	case bID%17 == 0:
 		c = colornames.Yellowgreen
 	}
 	boid := &Boid{
-		id:       bID,
-		position: pixel.V(rand.Float64()*float64(config.Width), rand.Float64()*float64(config.Height)),
-		velocity: pixel.V(rand.Float64()*2-1.0, rand.Float64()*2-1.0),
-		color:    c,
+		id: bID,
+		position: pixel.V(
+			rand.Float64()*float64(config.Width),   //nolint:gosec
+			rand.Float64()*float64(config.Height)), //nolint:gosec
+		velocity: pixel.V(
+			rand.Float64()*2-1.0,  //nolint:gosec
+			rand.Float64()*2-1.0), //nolint:gosec
+		color: c,
 	}
 	boidsMap[int(boid.position.X)][int(boid.position.Y)] = boid.id
 	return boid

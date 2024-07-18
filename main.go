@@ -24,7 +24,7 @@ func main() {
 		}
 	}
 
-	for i := 0; i < config.BoidsCount; i++ {
+	for i := range config.BoidsCount {
 		boid := createBoid(i)
 		boids[i] = boid
 		go boid.start()
