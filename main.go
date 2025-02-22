@@ -2,58 +2,86 @@ package main
 
 import (
 	"log"
+	"math"
 	"sync"
 
 	"github.com/OutOfStack/boids/config"
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/imdraw"
-	"github.com/faiface/pixel/pixelgl"
+	"github.com/gopxl/pixel/v2"
+	"github.com/gopxl/pixel/v2/backends/opengl"
+	"github.com/gopxl/pixel/v2/ext/imdraw"
 	"golang.org/x/image/colornames"
 )
 
 var (
-	boids    [config.BoidsCount]*Boid
-	boidsMap [config.Width + 1][config.Height + 1]int
-	rwLock   = sync.RWMutex{}
+	boids       []*Boid
+	boidsMatrix [][]int64
+	rwLock      = &sync.RWMutex{}
 )
 
+func init() {
+	cfg := config.GetConfig()
+	boids = make([]*Boid, cfg.BoidsCount)
+	boidsMatrix = make([][]int64, cfg.Width+1)
+	for i := range boidsMatrix {
+		boidsMatrix[i] = make([]int64, cfg.Height+1)
+	}
+}
+
 func main() {
-	for i, row := range boidsMap {
+	cfg := config.GetConfig()
+	// initialize boidsMatrix cells to -1 to indicate empty cells
+	for i, row := range boidsMatrix {
 		for j := range row {
-			boidsMap[i][j] = -1
+			boidsMatrix[i][j] = -1
 		}
 	}
 
-	for i := range config.BoidsCount {
+	// create boids and start their movement concurrently
+	for i := range cfg.BoidsCount {
 		boid := createBoid(i)
 		boids[i] = boid
 		go boid.start()
 	}
-	pixelgl.Run(run)
+
+	// start the rendering loop
+	opengl.Run(run)
 }
 
+// handles the rendering of boids
 func run() {
-	cfg := pixelgl.WindowConfig{
+	cfg := config.GetConfig()
+
+	windowCfg := opengl.WindowConfig{
 		Title:  "Boids",
-		Bounds: pixel.R(0, 0, config.Width, config.Height),
+		Bounds: pixel.R(0, 0, float64(cfg.Width), float64(cfg.Height)),
 		VSync:  true,
 	}
-	win, err := pixelgl.NewWindow(cfg)
+	win, err := opengl.NewWindow(windowCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// main render loop
 	for !win.Closed() {
 		win.Clear(colornames.Black)
 
 		imd := imdraw.New(nil)
-		for _, boid := range boids {
-			imd.Color = boid.color
-			imd.Push(pixel.V(boid.position.X+2, boid.position.Y),
-				pixel.V(boid.position.X-2, boid.position.Y),
-				pixel.V(boid.position.X, boid.position.Y-2),
-				pixel.V(boid.position.X, boid.position.Y+2))
-			imd.Polygon(1.5)
+		for _, b := range boids {
+			// compute the angle of the boid's velocity for directional rendering
+			angle := math.Atan2(b.velocity.Y, b.velocity.X)
+
+			// calculate triangle vertices to represent the boid's direction
+			size := float64(4)
+			tip := pixel.V(b.position.X+size*math.Cos(angle),
+				b.position.Y+size*math.Sin(angle))
+			left := pixel.V(b.position.X+size*math.Cos(angle-2.3),
+				b.position.Y+size*math.Sin(angle-2.3))
+			right := pixel.V(b.position.X+size*math.Cos(angle+2.3),
+				b.position.Y+size*math.Sin(angle+2.3))
+
+			imd.Color = b.color
+			imd.Push(tip, left, right)
+			imd.Polygon(0) // filled triangle
 		}
 
 		imd.Draw(win)
