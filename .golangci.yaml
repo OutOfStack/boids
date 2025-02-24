@@ -33,7 +33,6 @@ linters:
     - errcheck
     - errname
     - exhaustive
-    - exportloopref
     - fatcontext
     - forcetypeassert
     - gci
@@ -81,7 +80,6 @@ linters:
     - sqlclosecheck
     - staticcheck
     - stylecheck
-    - tenv
     - testableexamples
     - testifylint
     - testpackage
