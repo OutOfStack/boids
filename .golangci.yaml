@@ -11,7 +11,6 @@ linters-settings:
   govet:
     enable:
       - shadow
-  errcheck:
   goconst:
     min-len: 2
     min-occurrences: 2
@@ -33,7 +32,6 @@ linters:
     - errcheck
     - errname
     - exhaustive
-    - exportloopref
     - fatcontext
     - forcetypeassert
     - gci
@@ -81,7 +79,6 @@ linters:
     - sqlclosecheck
     - staticcheck
     - stylecheck
-    - tenv
     - testableexamples
     - testifylint
     - testpackage

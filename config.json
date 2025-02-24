@@ -1,0 +1,8 @@
+{
+  "width": 800,
+  "height": 600,
+  "boids_count":1500,
+  "view_radius": 7,
+  "adj_rate": 0.3,
+  "poly_thickness": 1.5
+}
