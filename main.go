@@ -3,9 +3,12 @@ package main
 import (
 	"log"
 	"math"
+	"runtime"
 	"sync"
+	"time"
 
 	"github.com/OutOfStack/boids/config"
+	"github.com/OutOfStack/boids/quadtree"
 	"github.com/gopxl/pixel/v2"
 	"github.com/gopxl/pixel/v2/backends/opengl"
 	"github.com/gopxl/pixel/v2/ext/imdraw"
@@ -13,34 +16,60 @@ import (
 )
 
 var (
-	boids       []*Boid
-	boidsMatrix [][]int64
-	rwLock      = &sync.RWMutex{}
+	boids  []*Boid
+	qtree  *quadtree.QuadTree
+	rwLock = &sync.RWMutex{}
 )
 
 func init() {
 	cfg := config.GetConfig()
 	boids = make([]*Boid, cfg.BoidsCount)
-	boidsMatrix = make([][]int64, cfg.Width+1)
-	for i := range boidsMatrix {
-		boidsMatrix[i] = make([]int64, cfg.Height+1)
-	}
+
+	// initialize the quadtree with the simulation bounds
+	qtree = quadtree.NewQuadTree(quadtree.Bounds{
+		X:      0,
+		Y:      0,
+		Width:  float64(cfg.Width),
+		Height: float64(cfg.Height),
+	}, 0)
 }
 
 func main() {
 	cfg := config.GetConfig()
-	// initialize boidsMatrix cells to -1 to indicate empty cells
-	for i, row := range boidsMatrix {
-		for j := range row {
-			boidsMatrix[i][j] = -1
-		}
-	}
 
-	// create boids and start their movement concurrently
+	// create boids
 	for i := range cfg.BoidsCount {
 		boid := createBoid(i)
 		boids[i] = boid
-		go boid.start()
+
+		// insert the boid into the quadtree
+		qtree.Insert(&quadtree.Object{
+			ID:       boid.id,
+			Position: boid.position,
+		})
+	}
+
+	// start a fixed number of worker goroutines to update boids.
+	// this prevents excessive goroutine creation with large boid counts
+	numWorkers := runtime.NumCPU() * 2
+	boidsPerWorker := int(cfg.BoidsCount) / numWorkers
+
+	for w := range numWorkers {
+		startIdx := w * boidsPerWorker
+		endIdx := startIdx + boidsPerWorker
+		if w == numWorkers-1 {
+			endIdx = int(cfg.BoidsCount) // the last worker gets any remaining boids
+		}
+
+		go func(start, end int) {
+			for {
+				for i := start; i < end; i++ {
+					boids[i].moveOne()
+				}
+				// sleep according to the configured update rate
+				time.Sleep(time.Duration(cfg.UpdateRateMs) * time.Millisecond)
+			}
+		}(startIdx, endIdx)
 	}
 
 	// start the rendering loop
@@ -81,7 +110,7 @@ func run() {
 
 			imd.Color = b.color
 			imd.Push(tip, left, right)
-			imd.Polygon(0) // filled triangle
+			imd.Polygon(cfg.PolyThickness) // filled triangle
 		}
 
 		imd.Draw(win)
