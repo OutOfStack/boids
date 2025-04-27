@@ -13,11 +13,6 @@ func Limit(vector pixel.Vec, lower, upper float64) pixel.Vec {
 		math.Min(math.Max(vector.Y, lower), upper))
 }
 
-// AddV adds value to X and Y of the given vector
-func AddV(vector pixel.Vec, value float64) pixel.Vec {
-	return pixel.V(vector.X+value, vector.Y+value)
-}
-
 // Distance calculates the Euclidean distance between two vectors.
 // The distance is determined using the Pythagorean theorem in 2D space.
 func Distance(v1, v2 pixel.Vec) float64 {
