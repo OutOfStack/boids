@@ -18,7 +18,13 @@ type Config struct {
 	QuadtreeMaxObj int     `json:"quadtree_max_obj"`
 	QuadtreeMaxLvl int     `json:"quadtree_max_lvl"`
 	UpdateRateMs   int     `json:"update_rate_ms"`
+	// Seed enables deterministic runs; if 0, a random seed is used.
+	Seed int64 `json:"seed,omitempty"`
 }
+
+const (
+	cfgPath = "config.json"
+)
 
 var (
 	instance *Config
@@ -30,7 +36,7 @@ func GetConfig() *Config {
 	once.Do(func() {
 		// load config from file
 		instance = &Config{}
-		data, err := os.ReadFile("config.json")
+		data, err := os.ReadFile(cfgPath)
 		if err != nil {
 			log.Fatal(err)
 		}

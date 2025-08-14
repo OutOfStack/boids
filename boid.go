@@ -2,10 +2,11 @@ package main
 
 import (
 	"image/color"
+	"math"
 	"math/rand"
 
 	"github.com/OutOfStack/boids/config"
-	v "github.com/OutOfStack/boids/vector"
+	"github.com/OutOfStack/boids/vector"
 	"github.com/gopxl/pixel/v2"
 	"golang.org/x/image/colornames"
 )
@@ -16,6 +17,15 @@ type Boid struct {
 	position pixel.Vec  // Current position in 2D space
 	velocity pixel.Vec  // Current velocity vector
 	color    color.RGBA // Color used for rendering
+}
+
+var rng = rand.New(rand.NewSource(1)) //nolint:gosec
+
+func setSeed(seed int64) {
+	if seed == 0 {
+		return
+	}
+	rng = rand.New(rand.NewSource(seed)) //nolint:gosec
 }
 
 // Initializes a new boid with random position and velocity.
@@ -35,120 +45,95 @@ func createBoid(bID int64) *Boid {
 		id: bID,
 		// random initial position within simulation bounds.
 		position: pixel.V(
-			rand.Float64()*float64(config.GetConfig().Width),   //nolint:gosec
-			rand.Float64()*float64(config.GetConfig().Height)), //nolint:gosec
+			rng.Float64()*float64(config.GetConfig().Width),
+			rng.Float64()*float64(config.GetConfig().Height)),
 		// random initial velocity in the range [-1, 1] for both X and Y
 		velocity: pixel.V(
-			rand.Float64()*2-1.0,  //nolint:gosec
-			rand.Float64()*2-1.0), //nolint:gosec
+			rng.Float64()*2-1.0,
+			rng.Float64()*2-1.0),
 		color: c,
 	}
 
 	return boid
 }
 
-// Updates the boid's velocity and position based on the calculated acceleration
-func (b *Boid) moveOne() {
-	// calculate acceleration
-	acceleration := b.calcAcceleration()
-	rwLock.Lock()
-	defer rwLock.Unlock()
-
-	// update velocity with acceleration and limit to [-1, 1]
-	b.velocity = v.Limit(b.velocity.Add(acceleration), -1, 1)
-
-	// update position based on new velocity
-	oldPosition := b.position
-	b.position = b.position.Add(b.velocity)
-
-	// wrap around screen edges if needed
+// Computes the steering acceleration for boid i based on snapshots and the quadtree built from snapshots.
+func calcAccelerationFor(i int, positions, velocities []pixel.Vec) pixel.Vec {
 	cfg := config.GetConfig()
-	width, height := float64(cfg.Width), float64(cfg.Height)
+	selfPos := positions[i]
+	selfVel := velocities[i]
 
-	if b.position.X < 0 {
-		b.position.X += width
-	} else if b.position.X >= width {
-		b.position.X -= width
-	}
-
-	if b.position.Y < 0 {
-		b.position.Y += height
-	} else if b.position.Y >= height {
-		b.position.Y -= height
-	}
-
-	// update the boid's position in the quadtree
-	if oldPosition != b.position {
-		qtree.Update(b.id, b.position)
-	}
-}
-
-// Computes the steering acceleration based on nearby boids.
-// It takes into account alignment, cohesion, separation, and border avoidance
-func (b *Boid) calcAcceleration() pixel.Vec {
-	cfg := config.GetConfig()
-
-	// query the quadtree for nearby boids
-	rwLock.RLock()
-	nearbyObjects := qtree.QueryCircle(b.position, cfg.ViewRadius)
-	rwLock.RUnlock()
+	// query the quadtree for nearby boids (including ghosts)
+	nearbyObjects := qtree.QueryCircle(selfPos, cfg.ViewRadius)
 
 	avgPosition, avgVelocity, separation := pixel.V(0, 0), pixel.V(0, 0), pixel.V(0, 0)
 	count := 0.0
 
-	width, height := float64(cfg.Width), float64(cfg.Height)
+	seen := make(map[int64]struct{})
 
-	// process nearby boids
+	// process nearby boids, deduping ghosts by ID
 	for _, obj := range nearbyObjects {
-		if obj.ID == b.id {
-			continue // skip self
+		if obj.ID == int64(i) {
+			continue
 		}
+		if _, ok := seen[obj.ID]; ok {
+			continue
+		}
+		seen[obj.ID] = struct{}{}
 
-		otherBoid := boids[obj.ID]
+		otherPos := positions[int(obj.ID)]
+		otherVel := velocities[int(obj.ID)]
 
 		// consider only boids with matching color group
-		if otherBoid.color == b.color {
-			dist := v.Distance(otherBoid.position, b.position)
-
-			// consider only boids within view radius
-			if dist < cfg.ViewRadius {
+		if boids[int(obj.ID)].color == boids[i].color {
+			dx := otherPos.X - selfPos.X
+			dy := otherPos.Y - selfPos.Y
+			dist2 := dx*dx + dy*dy
+			r2 := cfg.ViewRadius * cfg.ViewRadius
+			if dist2 < r2 && dist2 > 0 {
+				d := math.Sqrt(dist2)
 				count++
-				avgVelocity = avgVelocity.Add(otherBoid.velocity)
-				avgPosition = avgPosition.Add(otherBoid.position)
-				// calculate separation: steer away from neighbors
-				separation = separation.Add(v.DivisionV(b.position.Sub(otherBoid.position), dist))
+				avgVelocity = avgVelocity.Add(otherVel)
+				avgPosition = avgPosition.Add(otherPos)
+				// separation: steer away from neighbors
+				sep := vector.DivisionV(selfPos.Sub(otherPos), d)
+				separation = separation.Add(sep)
 			}
 		}
 	}
 
+	width, height := float64(cfg.Width), float64(cfg.Height)
 	// start with border bounce acceleration to avoid edges
-	accel := pixel.V(b.borderBounce(b.position.X, width), b.borderBounce(b.position.Y, height))
+	accel := pixel.V(borderBounce(selfPos.X, width), borderBounce(selfPos.Y, height))
 	if count > 0 {
-		// compute average position and velocity
-		avgPosition, avgVelocity = v.DivisionV(avgPosition, count), v.DivisionV(avgVelocity, count)
-		// alignment: steer towards average velocity
-		accelAlignment := avgVelocity.Sub(b.velocity).Scaled(cfg.AdjRate)
-		// cohesion: steer towards average position
-		accelCohesion := avgPosition.Sub(b.position).Scaled(cfg.AdjRate)
-		// separation: steer away to avoid crowding
+		avgPosition, avgVelocity = vector.DivisionV(avgPosition, count), vector.DivisionV(avgVelocity, count)
+		accelAlignment := avgVelocity.Sub(selfVel).Scaled(cfg.AdjRate)
+		accelCohesion := avgPosition.Sub(selfPos).Scaled(cfg.AdjRate)
 		accelSeparation := separation.Scaled(cfg.AdjRate)
-		// combine steering behaviors
 		accel = accel.Add(accelAlignment).Add(accelCohesion).Add(accelSeparation)
 	}
 
 	return accel
 }
 
-// Provides a force to steer the boid away from boundaries
-func (*Boid) borderBounce(pos, maxBorderPos float64) float64 {
+// Provides a force to steer the boid away from boundaries with clamping to avoid infinities
+func borderBounce(pos, maxBorderPos float64) float64 {
 	cfg := config.GetConfig()
-	// apply force when close to the left/top boundary.
+	eps := 1e-3
+	maxForce := 1.0
 	if pos < cfg.ViewRadius {
-		return 1 / pos
+		v := 1.0 / math.Max(pos, eps)
+		if v > maxForce {
+			v = maxForce
+		}
+		return v
 	}
-	// apply a force when close to the right/bottom boundary
 	if pos > maxBorderPos-cfg.ViewRadius {
-		return 1 / (pos - maxBorderPos)
+		v := 1.0 / math.Max(maxBorderPos-pos, eps)
+		if v > maxForce {
+			v = maxForce
+		}
+		return -v
 	}
 	return 0
 }

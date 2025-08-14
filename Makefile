@@ -5,17 +5,14 @@ build:
 run:
 	go run .
 
-LINT_PKG := github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
-LINT_BIN := $(shell go env GOPATH)/bin/golangci-lint
+test:
+	go test -race -vet=off ./...
+
+LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4
 lint:
-	@if \[ ! -f ${LINT_BIN} \]; then \
+	@if ! command -v golangci-lint >/dev/null 2>&1; then \
 		echo "Installing golangci-lint..."; \
-    go install ${LINT_PKG}; \
-  fi
-	@if \[ -f ${LINT_BIN} \]; then \
-  	echo "Found golangci-lint at '$(LINT_BIN)', running..."; \
-    ${LINT_BIN} run; \
-	else \
-    echo "golangci-lint not found or the file does not exist"; \
-    exit 1; \
-  fi
+		go install ${LINT_PKG}; \
+	fi
+	@echo "Running golangci-lint..."
+	@golangci-lint run
