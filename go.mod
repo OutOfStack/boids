@@ -1,10 +1,10 @@
 module github.com/OutOfStack/boids
 
-go 1.24
+go 1.25
 
 require (
 	github.com/gopxl/pixel/v2 v2.3.0
-	golang.org/x/image v0.26.0
+	golang.org/x/image v0.30.0
 )
 
 require (

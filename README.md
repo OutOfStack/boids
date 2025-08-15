@@ -24,6 +24,7 @@ All simulation parameters can be configured in the `config.json` file:
 | `quadtree_max_obj` | Maximum number of objects a quadtree node can contain before it splits into four child nodes. Lower values create more subdivisions, potentially improving query performance at the cost of memory usage. |
 | `quadtree_max_lvl` | Maximum depth of the quadtree. Limits how many times the space can be recursively subdivided. Prevents excessive memory usage in dense areas. |
 | `update_rate_ms`   | Time in milliseconds between boid updates. Lower values make boids move faster but consume more CPU. Higher values reduce CPU usage but make movement less smooth. |
+| `seed`             | Optional random seed for deterministic runs. If omitted or 0, a non-deterministic seed is used. |
 
 Example configuration:
 ```json
@@ -44,5 +45,5 @@ Example configuration:
 On Ubuntu/Debian-like Linux distributions, install `libgl1-mesa-dev` and `xorg-dev` packages
 
 ### Run:
-`make run` for run  
+`make run` for run
 `make build` for build

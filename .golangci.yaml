@@ -1,22 +1,10 @@
-run:
-  timeout: 3m
-
+version: "2"
 output:
   formats:
-    - format: colored-line-number
+    text:
       path: stdout
 
-# All available settings of specific linters.
-linters-settings:
-  govet:
-    enable:
-      - shadow
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-
 linters:
-  disable-all: true
   enable:
     - asasalint
     - asciicheck
@@ -34,21 +22,17 @@ linters:
     - exhaustive
     - fatcontext
     - forcetypeassert
-    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - goconst
     - gocritic
     - godox
-    - gofmt
     - goheader
-    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - gosimple
     - gosmopolitan
     - govet
     - grouper
@@ -78,13 +62,11 @@ linters:
     - spancheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
     - testableexamples
     - testifylint
     - testpackage
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
@@ -92,4 +74,30 @@ linters:
     - wastedassign
     - whitespace
     - zerologlint
+  settings:
+    govet:
+      enable:
+        - shadow
+    goconst:
+      min-len: 3
+      min-occurrences: 2
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - wsl
+          - goconst
+      - linters:
+        - revive # disable "should have a package comment"
+        text: "package comment"
 
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports

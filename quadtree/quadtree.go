@@ -1,7 +1,6 @@
 package quadtree
 
 import (
-	"github.com/OutOfStack/boids/config"
 	"github.com/gopxl/pixel/v2"
 )
 
@@ -46,17 +45,18 @@ type QuadTree struct {
 	level   int
 	divided bool
 	maxObj  int
+	maxLvl  int
 }
 
 // NewQuadTree creates a new quadtree
-func NewQuadTree(bounds Bounds, level int) *QuadTree {
-	cfg := config.GetConfig()
+func NewQuadTree(bounds Bounds, level int, maxObj, maxLvl int) *QuadTree {
 	return &QuadTree{
 		bounds:  bounds,
-		objects: make([]*Object, 0, cfg.QuadtreeMaxObj),
+		objects: make([]*Object, 0, maxObj),
 		level:   level,
 		divided: false,
-		maxObj:  cfg.QuadtreeMaxObj,
+		maxObj:  maxObj,
+		maxLvl:  maxLvl,
 	}
 }
 
@@ -81,10 +81,10 @@ func (qt *QuadTree) Split() {
 	y := qt.bounds.Y
 
 	// create four children nodes
-	qt.nodes[0] = NewQuadTree(Bounds{X: x + subWidth, Y: y + subHeight, Width: subWidth, Height: subHeight}, qt.level+1) // northeast
-	qt.nodes[1] = NewQuadTree(Bounds{X: x, Y: y + subHeight, Width: subWidth, Height: subHeight}, qt.level+1)            // northwest
-	qt.nodes[2] = NewQuadTree(Bounds{X: x, Y: y, Width: subWidth, Height: subHeight}, qt.level+1)                        // southwest
-	qt.nodes[3] = NewQuadTree(Bounds{X: x + subWidth, Y: y, Width: subWidth, Height: subHeight}, qt.level+1)             // southeast
+	qt.nodes[0] = NewQuadTree(Bounds{X: x + subWidth, Y: y + subHeight, Width: subWidth, Height: subHeight}, qt.level+1, qt.maxObj, qt.maxLvl) // northeast
+	qt.nodes[1] = NewQuadTree(Bounds{X: x, Y: y + subHeight, Width: subWidth, Height: subHeight}, qt.level+1, qt.maxObj, qt.maxLvl)            // northwest
+	qt.nodes[2] = NewQuadTree(Bounds{X: x, Y: y, Width: subWidth, Height: subHeight}, qt.level+1, qt.maxObj, qt.maxLvl)                        // southwest
+	qt.nodes[3] = NewQuadTree(Bounds{X: x + subWidth, Y: y, Width: subWidth, Height: subHeight}, qt.level+1, qt.maxObj, qt.maxLvl)             // southeast
 
 	qt.divided = true
 
@@ -146,8 +146,7 @@ func (qt *QuadTree) Insert(obj *Object) {
 	qt.objects = append(qt.objects, obj)
 
 	// check if we need to split the node
-	cfg := config.GetConfig()
-	if len(qt.objects) > cfg.QuadtreeMaxObj && qt.level < cfg.QuadtreeMaxLvl {
+	if len(qt.objects) > qt.maxObj && qt.level < qt.maxLvl {
 		if !qt.divided {
 			qt.Split()
 		}
