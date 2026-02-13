@@ -1,18 +1,16 @@
 build:
 	mkdir -p bin
-	go build -o bin/boids main.go
+	go build -o bin/boids .
 
 run:
 	go run .
 
 test:
-	go test -race -vet=off ./...
+	go test -race -v -vet=off ./...
 
-LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4
+LINT_VERSION := v2.9
+LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(LINT_VERSION)
 lint:
-	@if ! command -v golangci-lint >/dev/null 2>&1; then \
-		echo "Installing golangci-lint..."; \
-		go install ${LINT_PKG}; \
-	fi
-	@echo "Running golangci-lint..."
-	@golangci-lint run
+	@golangci-lint version >/dev/null 2>&1 || { echo "Installing golangci-lint..."; go install ${LINT_PKG}; }
+	@echo "Found golangci-lint, running..."
+	golangci-lint run
