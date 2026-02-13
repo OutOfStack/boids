@@ -10,14 +10,12 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
-    - containedctx
     - contextcheck
     - copyloopvar
     - decorder
     - dogsled
     - dupword
     - durationcheck
-    - errcheck
     - errname
     - exhaustive
     - fatcontext
@@ -34,16 +32,15 @@ linters:
     - goprintffuncname
     - gosec
     - gosmopolitan
-    - govet
     - grouper
     - importas
     - inamedparam
-    - ineffassign
     - intrange
     - loggercheck
     - makezero
     - mirror
     - misspell
+    - modernize
     - nakedret
     - nilerr
     - nilnil
@@ -64,13 +61,12 @@ linters:
     - staticcheck
     - testableexamples
     - testifylint
-    - testpackage
     - thelper
     - tparallel
     - unconvert
     - unparam
-    - unused
     - usestdlibvars
+    - usetesting
     - wastedassign
     - whitespace
     - zerologlint

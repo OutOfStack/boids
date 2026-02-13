@@ -13,11 +13,11 @@ func Limit(vector pixel.Vec, lower, upper float64) pixel.Vec {
 		math.Min(math.Max(vector.Y, lower), upper))
 }
 
-// DistanceSquared calculates squared distance between two vectors.
-func DistanceSquared(v1, v2 pixel.Vec) float64 {
-	dx := v1.X - v2.X
-	dy := v1.Y - v2.Y
-	return dx*dx + dy*dy
+// Distance calculates the Euclidean distance between two vectors.
+// The distance is determined using the Pythagorean theorem in 2D space.
+func Distance(v1, v2 pixel.Vec) float64 {
+	xDist, yDist := v1.X-v2.X, v1.Y-v2.Y
+	return math.Sqrt(xDist*xDist + yDist*yDist)
 }
 
 // DivisionV divides X and Y of vector by a specified divisor.

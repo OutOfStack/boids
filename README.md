@@ -47,3 +47,5 @@ On Ubuntu/Debian-like Linux distributions, install `libgl1-mesa-dev` and `xorg-d
 ### Run:
 `make run` for run
 `make build` for build
+`make test` for tests
+`make lint` for linter
