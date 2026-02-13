@@ -1,6 +1,6 @@
 build:
 	mkdir -p bin
-	go build -o bin/boids main.go
+	go build -o bin/boids .
 
 run:
 	go run .

@@ -18,16 +18,12 @@ func TestGetConfig(t *testing.T) {
 	}
 	defer func() {
 		// restore original directory
-		if err := os.Chdir(originalWd); err != nil {
-			t.Errorf("Failed to restore working directory: %v", err)
-		}
+		t.Chdir(originalWd)
 	}()
 
 	// create a temporary directory for test
 	tempDir := t.TempDir()
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatalf("Failed to change to temp directory: %v", err)
-	}
+	t.Chdir(tempDir)
 
 	// create a test config.json
 	testConfig := &config.Config{
@@ -94,7 +90,7 @@ func TestGetConfigConcurrency(t *testing.T) {
 	var wg sync.WaitGroup
 	configs := make([]*config.Config, numGoroutines)
 
-	for i := 0; i < numGoroutines; i++ {
+	for i := range numGoroutines {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
