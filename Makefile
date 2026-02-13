@@ -6,7 +6,7 @@ run:
 	go run .
 
 test:
-	go test -v -race ./...
+	go test -race -v -vet=off ./...
 
 LINT_VERSION := v2.9
 LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(LINT_VERSION)
