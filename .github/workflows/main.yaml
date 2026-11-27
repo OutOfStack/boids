@@ -18,7 +18,7 @@ jobs:
         run: go mod verify
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev xorg-dev libegl-dev libgbm-dev libdrm-dev libwayland-dev libxkbcommon-dev
 
       - name: Build
         run: go build -v ./...

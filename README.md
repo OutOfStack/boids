@@ -4,7 +4,7 @@ A desktop flocking simulation in Go. Boids align, cohere, and separate within th
 
 ## Run
 
-From the project directory, run `go run .` with Go 1.27 or later. On Windows amd64, `go run -tags nocgo .` uses the embedded raylib DLL and works without a C compiler. For a cgo build on Debian or Ubuntu, install `libgl1-mesa-dev` and `xorg-dev`.
+From the project directory, run `go run .` with Go 1.27 or later. On Windows amd64, `go run -tags nocgo .` uses the embedded raylib DLL and works without a C compiler. For a cgo build on Debian or Ubuntu, install `libgl1-mesa-dev xorg-dev libegl-dev libgbm-dev libdrm-dev libwayland-dev libxkbcommon-dev`.
 
 Drag with the left mouse button to orbit, scroll to zoom, and press Escape to close.
 
