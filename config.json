@@ -1,12 +1,11 @@
 {
   "width": 800,
   "height": 600,
+  "depth": 600,
   "boids_count": 2000,
-  "view_radius": 7,
-  "adj_rate": 0.3,
-  "poly_thickness": 1.5,
-  "quadtree_max_obj": 10,
-  "quadtree_max_lvl": 5,
+  "view_radius": 50,
+  "adj_rate": 0.06,
+  "boid_size": 8,
   "update_rate_ms": 10,
   "seed": 1
 }

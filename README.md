@@ -1,51 +1,28 @@
-# boids
+# Boids 3D
 
-## Boids is an artificial life program, which simulates the flocking behaviour of birds.[<sup>wiki<sup>](https://en.wikipedia.org/wiki/Boids)
+A desktop flocking simulation in Go. Boids align, cohere, and separate within their color group in a bounded 3D world. A CPU spatial grid finds nearby boids, and raylib draws the flock as instanced meshes.
 
-### Features
+## Run
 
-- Flocking behavior simulation with alignment, cohesion, and separation rules
-- Color-based grouping of boids
-- Spatial partitioning using a quadtree for improved performance
-- Concurrent processing of boid movements
+From the project directory, run `go run .` with Go 1.27 or later. On Windows amd64, `go run -tags nocgo .` uses the embedded raylib DLL and works without a C compiler. For a cgo build on Debian or Ubuntu, install `libgl1-mesa-dev xorg-dev libegl-dev libgbm-dev libdrm-dev libwayland-dev libxkbcommon-dev`.
 
-### Configuration Parameters
+Drag with the left mouse button to orbit, scroll to zoom, and press Escape to close.
 
-All simulation parameters can be configured in the `config.json` file:
+`make build` builds the app, `make test` runs tests (with the race detector outside Windows), and `make lint` runs the linter.
 
-| Parameter          | Description |
-|--------------------|-------------|
-| `width`            | Width of the simulation window in pixels. Defines the horizontal bounds of the simulation space. |
-| `height`           | Height of the simulation window in pixels. Defines the vertical bounds of the simulation space. |
-| `boids_count`      | Total number of boids to simulate. Higher values create more complex flocking patterns but require more computational resources. |
-| `view_radius`      | The radius within which each boid can see other boids. Determines how far a boid can detect neighbors for flocking behaviors. Also used for boundary avoidance calculations. |
-| `adj_rate`         | Adjustment rate for steering behaviors. Controls how quickly boids adjust their velocity in response to alignment, cohesion, and separation forces. Higher values make boids more responsive but can lead to erratic movement. |
-| `poly_thickness`   | Thickness of the polygon lines used for rendering boids. Affects the visual appearance of boids. |
-| `quadtree_max_obj` | Maximum number of objects a quadtree node can contain before it splits into four child nodes. Lower values create more subdivisions, potentially improving query performance at the cost of memory usage. |
-| `quadtree_max_lvl` | Maximum depth of the quadtree. Limits how many times the space can be recursively subdivided. Prevents excessive memory usage in dense areas. |
-| `update_rate_ms`   | Time in milliseconds between boid updates. Lower values make boids move faster but consume more CPU. Higher values reduce CPU usage but make movement less smooth. |
-| `seed`             | Optional random seed for deterministic runs. If omitted or 0, a non-deterministic seed is used. |
+## Configuration
 
-Example configuration:
-```json
-{
-  "width": 800,
-  "height": 600,
-  "boids_count": 1500,
-  "view_radius": 7,
-  "adj_rate": 0.3,
-  "poly_thickness": 1.5,
-  "quadtree_max_obj": 10,
-  "quadtree_max_lvl": 5,
-  "update_rate_ms": 5
-}
-```
+Edit `config.json` in the working directory.
 
-### Requirements:
-On Ubuntu/Debian-like Linux distributions, install `libgl1-mesa-dev` and `xorg-dev` packages
+| Setting | Description |
+| --- | --- |
+| `width`, `height` | World dimensions along X and Y, and initial window dimensions in pixels. Resizing the window leaves the world dimensions alone. |
+| `depth` | World dimension along Z. Defaults to `height` when omitted. |
+| `boids_count` | Number of boids, up to 1,000,000. |
+| `view_radius` | Neighbor detection radius in world units. Also controls how far from a face border steering starts. |
+| `adj_rate` | Strength of the alignment, cohesion, and separation forces. |
+| `boid_size` | Length of the rendered boid in world units. Defaults to 8. |
+| `update_rate_ms` | Interval between simulation steps in milliseconds. |
+| `seed` | Set a nonzero seed for repeatable initial positions and velocities. Zero or omission uses a random seed. |
 
-### Run:
-`make run` for run
-`make build` for build
-`make test` for tests
-`make lint` for linter
+Boids steer away from the six faces of the box as they approach them, and are kept inside it if they overshoot.
