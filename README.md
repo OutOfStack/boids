@@ -1,6 +1,6 @@
 # Boids 3D
 
-A desktop flocking simulation in Go. Boids align, cohere, and separate within their color group in a wrapping 3D world. A CPU spatial grid finds nearby boids, and raylib draws the flock as instanced meshes.
+A desktop flocking simulation in Go. Boids align, cohere, and separate within their color group in a bounded 3D world. A CPU spatial grid finds nearby boids, and raylib draws the flock as instanced meshes.
 
 ## Run
 
@@ -19,10 +19,10 @@ Edit `config.json` in the working directory.
 | `width`, `height` | World dimensions along X and Y, and initial window dimensions in pixels. Resizing the window leaves the world dimensions alone. |
 | `depth` | World dimension along Z. Defaults to `height` when omitted. |
 | `boids_count` | Number of boids, up to 1,000,000. |
-| `view_radius` | Neighbor detection radius in world units. |
+| `view_radius` | Neighbor detection radius in world units. Also controls how far from a face border steering starts. |
 | `adj_rate` | Strength of the alignment, cohesion, and separation forces. |
 | `boid_size` | Length of the rendered boid in world units. Defaults to 8. |
 | `update_rate_ms` | Interval between simulation steps in milliseconds. |
 | `seed` | Set a nonzero seed for repeatable initial positions and velocities. Zero or omission uses a random seed. |
 
-The world wraps: a boid crossing a face reappears on the opposite side, and neighbor detection wraps across faces too.
+Boids steer away from the six faces of the box as they approach them, and are kept inside it if they overshoot.

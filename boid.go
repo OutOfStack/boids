@@ -29,6 +29,11 @@ func (v vec3) lengthSquared() float64 {
 }
 
 const (
+	minSpeed = 0.5
+	maxSpeed = 1.0
+)
+
+const (
 	grayFlock = iota
 	orangeFlock
 	blueFlock
@@ -45,7 +50,6 @@ type boid struct {
 type simulation struct {
 	cfg    *config.Config
 	extent vec3
-	half   vec3 // extent / 2, for shortest wrapped displacement
 	grid   spatialGrid
 
 	mu      sync.RWMutex
@@ -59,7 +63,6 @@ func newSimulation(cfg *config.Config) *simulation {
 	sim := &simulation{
 		cfg:     cfg,
 		extent:  extent,
-		half:    extent.scale(0.5),
 		grid:    newSpatialGrid(extent, cfg.ViewRadius, count),
 		current: make([]boid, count),
 		next:    make([]boid, count),
@@ -112,12 +115,24 @@ func (s *simulation) step() {
 	s.grid.rebuild(s.current)
 	for i, b := range s.current {
 		velocity := b.velocity.add(s.steer(i))
-		// Cap speed by length so diagonal motion is not faster than axial.
-		if speedSquared := velocity.lengthSquared(); speedSquared > 1 {
-			velocity = velocity.scale(1 / math.Sqrt(speedSquared))
+		// Keep speed in [minSpeed, maxSpeed] by length, so diagonal motion is
+		// not faster than axial and groups whose velocities cancel keep moving.
+		// Steering that cancels exactly keeps the previous heading.
+		speed := math.Sqrt(velocity.lengthSquared())
+		if speed == 0 {
+			velocity, speed = b.velocity, math.Sqrt(b.velocity.lengthSquared())
+		}
+		if speed > 0 {
+			velocity = velocity.scale(min(maxSpeed, max(minSpeed, speed)) / speed)
 		}
 		for axis, length := range s.extent {
-			b.position[axis] = wrap(b.position[axis]+velocity[axis], length)
+			// Border steering turns boids back; a boid that still reaches a
+			// wall is clamped to it and bounces off it.
+			position := b.position[axis] + velocity[axis]
+			if position <= 0 || position >= length {
+				velocity[axis] = -velocity[axis]
+			}
+			b.position[axis] = min(length, max(0, position))
 		}
 		b.velocity = velocity
 		s.next[i] = b
@@ -150,15 +165,6 @@ func (s *simulation) steer(i int) vec3 {
 			}
 
 			delta := other.position.sub(self.position)
-			for axis, length := range s.extent {
-				// Use the shortest displacement across each periodic boundary.
-				switch half := s.half[axis]; {
-				case delta[axis] > half:
-					delta[axis] -= length
-				case delta[axis] < -half:
-					delta[axis] += length
-				}
-			}
 			distanceSquared := delta.lengthSquared()
 			if distanceSquared == 0 || distanceSquared >= radius*radius {
 				continue
@@ -170,20 +176,28 @@ func (s *simulation) steer(i int) vec3 {
 		}
 	}
 
-	if neighbors == 0 {
-		return vec3{}
+	var acceleration vec3
+	for axis, length := range s.extent {
+		acceleration[axis] = borderForce(self.position[axis], length, radius)
 	}
-	flocking := alignment.scale(1 / neighbors).sub(self.velocity).
-		add(cohesion.scale(1 / neighbors)).add(separation)
-	return flocking.scale(s.cfg.AdjRate)
+	if neighbors > 0 {
+		flocking := alignment.scale(1 / neighbors).sub(self.velocity).
+			add(cohesion.scale(1 / neighbors)).add(separation)
+		acceleration = acceleration.add(flocking.scale(s.cfg.AdjRate))
+	}
+	return acceleration
 }
 
-func wrap(position, length float64) float64 {
-	if position < 0 {
-		position += length
+// borderForce pushes a boid away from the nearer face once it is within
+// radius of it, growing as 1/distance.
+func borderForce(position, length, radius float64) float64 {
+	opposite := length - position
+	switch {
+	case position < opposite && position < radius:
+		return 1 / max(1, position)
+	case opposite < position && opposite < radius:
+		return -1 / max(1, opposite)
+	default:
+		return 0
 	}
-	if position >= length {
-		return position - length
-	}
-	return position
 }

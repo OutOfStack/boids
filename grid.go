@@ -14,7 +14,7 @@ type spatialGrid struct {
 func newSpatialGrid(extent vec3, radius float64, count int) spatialGrid {
 	grid := spatialGrid{next: make([]int, count)}
 	// Cells at least as wide as the radius let us check one cell in each
-	// direction, including across wrapped boundaries. Cells no smaller than the
+	// direction. Cells no smaller than the
 	// volume per boid keep the cell count near the boid count for any radius.
 	volume := extent[0] * extent[1] * extent[2]
 	cellWidth := max(radius, math.Cbrt(volume/float64(max(1, count))))
@@ -52,16 +52,11 @@ func (g *spatialGrid) rebuild(boids []boid) {
 // returns them. Iterating head/next directly in the caller keeps the hot loop
 // free of callbacks.
 func (g *spatialGrid) neighborCells(position vec3, dst *[27]int) []int {
-	index := g.cellAt(position)
-	nx, ny, nz := g.size[0], g.size[1], g.size[2]
+	c := g.cellAt(position)
 	cells := dst[:0]
-	// A wrapped axis with fewer than three cells only needs one visit per cell.
-	for dz := range min(3, nz) {
-		z := (index[2] + dz + nz - 1) % nz
-		for dy := range min(3, ny) {
-			y := (index[1] + dy + ny - 1) % ny
-			for dx := range min(3, nx) {
-				x := (index[0] + dx + nx - 1) % nx
+	for z := max(0, c[2]-1); z <= min(g.size[2]-1, c[2]+1); z++ {
+		for y := max(0, c[1]-1); y <= min(g.size[1]-1, c[1]+1); y++ {
+			for x := max(0, c[0]-1); x <= min(g.size[0]-1, c[0]+1); x++ {
 				cells = append(cells, g.index(x, y, z))
 			}
 		}
